@@ -1,0 +1,10 @@
+# Routes
+GET     /tasks                      controllers.HomeController.getAll
+GET     /tasks/:id                  controllers.HomeController.getById(id: Long)
+POST    /tasks                      controllers.HomeController.create
+PUT     /tasks/:id                  controllers.HomeController.update(id: Long)
+DELETE  /tasks/:id                  controllers.HomeController.delete(id: Long)
+
+GET     /events                     controllers.HomeController.events
+GET     /categories                 controllers.HomeController.categories
+GET     /extApi                     controllers.HomeController.extApi
