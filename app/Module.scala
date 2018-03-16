@@ -16,7 +16,7 @@ class Module extends AbstractModule with AkkaGuiceSupport {
 
   override def configure() = {
 
-    bindActor[TaskActor]("task-actor")
+    //bindActor[TaskActor]("task-actor")
   }
 
 }

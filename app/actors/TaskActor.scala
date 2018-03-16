@@ -1,7 +1,6 @@
 package actors
 
 import java.util.Date
-import javax.inject._
 
 import akka.actor._
 import akka.pattern.pipe
@@ -11,6 +10,8 @@ import model.Task
 import scala.util.{Failure, Success}
 
 object TaskActor {
+
+  def props(dao: TaskDao): Props = Props(new TaskActor(dao))
 
   case class Create(name: String, description: String, category: String, dueDate: Date, createDate: Date)
 
@@ -28,7 +29,7 @@ object TaskActor {
 
 }
 
-class TaskActor @Inject() (dao: TaskDao) extends Actor with ActorLogging {
+class TaskActor(dao: TaskDao) extends Actor with ActorLogging {
 
   import TaskActor._
   import dao._
@@ -36,7 +37,7 @@ class TaskActor @Inject() (dao: TaskDao) extends Actor with ActorLogging {
   implicit val ec = context.dispatcher
 
   override def receive: Receive = {
-    case GetAll                                                       => findAll      pipeTo sender()
+    case GetAll                                                       => findAll pipeTo sender()
     case GetById(id)                                                  => getAndCheckTask(id)
     case Delete(id)                                                   => delete(id)   pipeTo sender()
     case CheckDueDate                                                 => findAllWithDueDateExceeded pipeTo sender()

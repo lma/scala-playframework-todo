@@ -4,33 +4,33 @@ import javax.inject._
 
 import actors.TaskActor
 import actors.TaskActor.TaskNotFound
-import akka.actor.ActorRef
+import akka.Done
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
-import akka.stream.scaladsl.Source
 import akka.util.Timeout
-import akka.{Done, NotUsed}
 import controllers.json.{TaskJsonSupport, UserJsonSupport}
+import dao.TaskDao
 import model._
 import play.api.cache._
-import play.api.http.ContentTypes
-import play.api.libs.EventSource
+import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json._
-import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class HomeController @Inject()(cc: ControllerComponents,
-                               @Named("task-actor") taskActor: ActorRef,
+class TaskController @Inject()(system: ActorSystem,
+                               cc: ControllerComponents,
                                cache: AsyncCacheApi,
-                               ws: WSClient,
+                               dbConfigProvider: DatabaseConfigProvider,
                                config: Configuration)(implicit exec: ExecutionContext)
-  extends AbstractController(cc) with TaskJsonSupport with UserJsonSupport {
+                               extends AbstractController(cc) with TaskJsonSupport with UserJsonSupport {
 
   implicit val timeout: Timeout = 5.seconds
+
+  val taskActor: ActorRef = system.actorOf(TaskActor.props(new TaskDao(dbConfigProvider)))
 
   def getAll: Action[AnyContent] = Action.async {
     (taskActor ? TaskActor.GetAll).mapTo[Seq[Task]].map { resp =>
@@ -62,10 +62,10 @@ class HomeController @Inject()(cc: ControllerComponents,
         addCategoryToCache(task)
           .flatMap(_ => taskActor ? TaskActor.Create(task.name, task.description, task.category, task.dueDate, task.createDate))
           .mapTo[Long]
-          .map{ m => Ok(Json.toJson(m))}
+          .map{ m => Created(Json.toJson(m))}
           .recover({
-            //TODO error handling
-            case _ => {
+            case e => {
+              Logger.error("Something went wrong.", e)
               InternalServerError(Json.toJson("Something went wrong!"))
             }
          })
@@ -97,36 +97,12 @@ class HomeController @Inject()(cc: ControllerComponents,
     )
   }
 
-  def events = Action {
-    val source = Source
-      .tick(0.seconds, 10.seconds, NotUsed)
-      .map(_ => taskToMessage)
-
-    Ok.chunked(source via EventSource.flow).as(ContentTypes.EVENT_STREAM)
-  }
-
   def categories: Action[AnyContent] = Action.async {
     import scala.collection.mutable.Set
     cache.get[Set[String]]("category").map{
       case Some(x) => Ok(Json.toJson(x))
       case None => Ok(Json.toJson("no cached categories"))
     }
-  }
-
-  def extApi = Action.async {
-
-    val restApi = config.get[String]("users.rest.api")
-    ws.url(restApi).get()
-      .map{
-        response =>
-          val users = (response.json).validate[Seq[User]].get
-          Ok(s"Results from: ${restApi}\nusers size: ${users.size}\n" + (users.map(u => s"${u.id}. ${u.name}").mkString("\n")).toString)
-      }
-  }
-
-  private def taskToMessage = {
-    Await.result((taskActor ? TaskActor.CheckDueDate)
-      .map(r => r.asInstanceOf[Seq[Task]].map(t => t.id.get).mkString("\n")), Duration.Inf)
   }
 
   private def addCategoryToCache(task: Task): Future[Done] = {

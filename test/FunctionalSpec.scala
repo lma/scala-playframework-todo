@@ -1,4 +1,4 @@
-import controllers.HomeController
+import controllers.TaskController
 import model.Task
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
@@ -16,7 +16,7 @@ import play.mvc.Http
 class FunctionalSpec extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures {
 
   implicit val taskWrites: OWrites[Task] = Json.writes[Task]
-  def homeController = app.injector.instanceOf(classOf[HomeController])
+  def homeController = app.injector.instanceOf(classOf[TaskController])
 
   "Routes" should {
 
@@ -78,7 +78,7 @@ class FunctionalSpec extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures
 
       val home = route(app, value).get
 
-      status(home) mustBe Status.OK
+      status(home) mustBe Status.CREATED
       contentType(home) mustBe Some("application/json")
       contentAsJson(home) mustBe Json.toJson(1)
     }

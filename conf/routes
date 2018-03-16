@@ -1,10 +1,12 @@
 # Routes
-GET     /tasks                      controllers.HomeController.getAll
-GET     /tasks/:id                  controllers.HomeController.getById(id: Long)
-POST    /tasks                      controllers.HomeController.create
-PUT     /tasks/:id                  controllers.HomeController.update(id: Long)
-DELETE  /tasks/:id                  controllers.HomeController.delete(id: Long)
+GET     /tasks                      controllers.TaskController.getAll
+GET     /tasks/:id                  controllers.TaskController.getById(id: Long)
+POST    /tasks                      controllers.TaskController.create
+PUT     /tasks/:id                  controllers.TaskController.update(id: Long)
+DELETE  /tasks/:id                  controllers.TaskController.delete(id: Long)
+GET     /categories                 controllers.TaskController.categories
 
-GET     /events                     controllers.HomeController.events
-GET     /categories                 controllers.HomeController.categories
-GET     /extApi                     controllers.HomeController.extApi
+GET     /extApi                     controllers.ExternalApiController.extApi
+
+GET     /events                     controllers.WebSocketTaskController.events
+GET     /socket                     controllers.WebSocketTaskController.socket

@@ -2,24 +2,19 @@ package dao
 
 import java.sql.Timestamp
 import java.util.Date
-import javax.inject.{Inject, Singleton}
 
 import model.Task
 import model.definition.TaskTable
-import play.api.db.slick.DatabaseConfigProvider
-import slick.dbio.NoStream
-import slick.jdbc.H2Profile.api._
+import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.sql.{FixedSqlStreamingAction, SqlAction}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class TaskDao @Inject() (dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) {
-  private val dbConfig = dbConfigProvider.get[JdbcProfile]
+class TaskDao(protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends HasDatabaseConfigProvider[JdbcProfile] {
+  import profile.api._
   val tasks = TableQuery[TaskTable]
 
-  import dbConfig._
   protected implicit def executeFromDb[A](action: SqlAction[A, NoStream, _ <: slick.dbio.Effect]): Future[A] = {
     db.run(action)
   }
@@ -33,11 +28,7 @@ class TaskDao @Inject() (dbConfigProvider: DatabaseConfigProvider)(implicit ec: 
     timestamp => new Date(timestamp.getTime)
   )
 
-  val setup = DBIO.seq(
-    (tasks.schema).create
-  )
-
-  db.run(setup)
+  //tasks.schema.createStatements.foreach(println)
 
   def findAll: Future[Seq[Task]] = tasks.result
 
