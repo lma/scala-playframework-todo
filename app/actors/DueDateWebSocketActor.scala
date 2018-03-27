@@ -6,6 +6,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import model.Task
+import play.api.Logger
 
 import scala.concurrent.duration._
 
@@ -27,12 +28,11 @@ class DueDateWebSocketActor(out: ActorRef, taskActor: ActorRef) extends Actor wi
     case AskDueDate => {
       (taskActor ? CheckDueDate).mapTo[Seq[Task]]
         .map(tasks => {
-          println("I received tasks: " + tasks.size)
           out ! ("I received tasks: " + tasks.size)
         })
         .recover({
           case e => {
-            e.printStackTrace
+            Logger.error("Error from webSocketActor ", e)
             out ! "Error"
           }
         })

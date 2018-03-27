@@ -40,7 +40,8 @@ class WebSocketTaskController @Inject()(system: ActorSystem,
   def events = Action {
     val source = Source
       .tick(0.seconds, 10.seconds, NotUsed)
-      .map(_ => taskToMessage)
+      .mapAsync(1)(taskToMessage3)
+
 
     Ok.chunked(source via EventSource.flow).as(ContentTypes.EVENT_STREAM)
   }
@@ -55,4 +56,8 @@ class WebSocketTaskController @Inject()(system: ActorSystem,
     Await.result((taskActor ? TaskActor.CheckDueDate)
       .map(r => r.asInstanceOf[Seq[Task]].map(t => t.id.get).mkString("\n")), Duration.Inf)
   }
+
+  private def taskToMessage3: NotUsed => Future[String] = _ =>
+   (taskActor ? TaskActor.CheckDueDate).mapTo[Seq[Task]].map(t => t.size.toString)
+
 }

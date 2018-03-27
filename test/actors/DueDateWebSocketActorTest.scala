@@ -9,8 +9,6 @@ import model.Task
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.specs2.mock.Mockito
 
-import scala.concurrent.duration._
-
 
 class DueDateWebSocketActorTest extends TestKit(ActorSystem("DueDateWebSocketActorTest")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll with Mockito {
@@ -25,9 +23,7 @@ class DueDateWebSocketActorTest extends TestKit(ActorSystem("DueDateWebSocketAct
       val controllerActor = TestProbe()
       val taskActor = TestProbe()
 
-      system.actorOf(Props(new DueDateWebSocketActor(controllerActor.ref, taskActor.ref) {
-        override def interval: FiniteDuration = 20.second
-      }))
+      system.actorOf(Props(new DueDateWebSocketActor(controllerActor.ref, taskActor.ref)))
 
       taskActor.expectMsg(CheckDueDate)
       taskActor.reply(Seq(
